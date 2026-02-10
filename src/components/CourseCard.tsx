@@ -1,20 +1,22 @@
-import Link from 'next/link';
 import type { Course } from '@/types';
-import CategoryBadge from './CategoryBadge';
+import Link from 'next/link';
 import Button from './Button';
+import CategoryBadge from './CategoryBadge';
 
 interface CourseCardProps {
     course: Course;
 }
 
 export default function CourseCard({ course }: CourseCardProps) {
-    const mainImage = course.images?.find((img) => img.isMain) || course.images?.[0];
-    const categories = course.courseCategories?.map((cc) => cc.category).filter(Boolean) || [];
+    const mainImage =
+        course.images?.find((img) => img.isMain) || course.images?.[0];
+    const categories =
+        course.courseCategories?.map((cc) => cc.category).filter(Boolean) || [];
 
     return (
-        <div className="group bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2 border border-gray-100">
+        <div className="group flex flex-col h-full bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2 border border-gray-100">
             {mainImage && (
-                <div className="h-52 bg-gradient-to-br from-gray-100 to-gray-200 overflow-hidden relative">
+                <div className="h-52 flex-shrink-0 bg-gradient-to-br from-gray-100 to-gray-200 overflow-hidden relative">
                     <img
                         src={mainImage.imageUrl}
                         alt={course.name}
@@ -23,8 +25,8 @@ export default function CourseCard({ course }: CourseCardProps) {
                     <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                 </div>
             )}
-            <div className="p-6">
-                <h3 className="text-xl font-bold text-gray-900 mb-2 line-clamp-2 group-hover:text-primary-600 transition-colors duration-200">
+            <div className="p-6 flex flex-col flex-1 min-h-0">
+                <h3 className="text-xl font-bold text-gray-900 mb-2 line-clamp-2 group-hover:text-green-600 transition-colors duration-200">
                     {course.name}
                 </h3>
                 {course.organization && (
@@ -47,8 +49,12 @@ export default function CourseCard({ course }: CourseCardProps) {
                         ))}
                     </div>
                 )}
-                <Link href={`/courses/${course.id}`}>
-                    <Button variant="primary" size="sm" className="w-full group-hover:shadow-lg">
+                <Link href={`/courses/${course.id}`} className="mt-auto pt-2">
+                    <Button
+                        variant="primary"
+                        size="sm"
+                        className="w-full group-hover:shadow-lg"
+                    >
                         Ver más
                     </Button>
                 </Link>
@@ -56,4 +62,3 @@ export default function CourseCard({ course }: CourseCardProps) {
         </div>
     );
 }
-

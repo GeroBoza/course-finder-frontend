@@ -7,32 +7,32 @@ export default function Navbar() {
                 <div className="flex justify-between items-center h-20">
                     <Link
                         href="/"
-                        className="text-2xl font-extrabold bg-gradient-to-r from-primary-600 to-primary-800 bg-clip-text text-transparent hover:scale-105 transition-transform duration-200"
+                        className="text-3xl font-extrabold bg-gradient-to-r from-green-600 to-green-800 bg-clip-text text-transparent hover:scale-105 transition-transform duration-200"
                     >
-                        Cursos Platform
+                        DivulgAR
                     </Link>
                     <div className="hidden md:flex space-x-1">
                         <Link
                             href="/"
-                            className="px-4 py-2 text-gray-700 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-all duration-200 font-medium"
+                            className="px-4 py-2 text-md uppercase text-gray-700 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-all duration-200 font-medium"
                         >
                             Inicio
                         </Link>
                         <Link
                             href="/courses"
-                            className="px-4 py-2 text-gray-700 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-all duration-200 font-medium"
+                            className="px-4 py-2 text-md uppercase text-gray-700 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-all duration-200 font-medium"
                         >
                             Cursos
                         </Link>
                         <Link
                             href="/organizations"
-                            className="px-4 py-2 text-gray-700 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-all duration-200 font-medium"
+                            className="px-4 py-2 text-md uppercase text-gray-700 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-all duration-200 font-medium"
                         >
                             Organizaciones
                         </Link>
                         <Link
                             href="/about"
-                            className="px-4 py-2 text-gray-700 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-all duration-200 font-medium"
+                            className="px-4 py-2 text-md uppercase text-gray-700 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-all duration-200 font-medium"
                         >
                             Acerca de
                         </Link>
@@ -42,4 +42,3 @@ export default function Navbar() {
         </nav>
     );
 }
-
