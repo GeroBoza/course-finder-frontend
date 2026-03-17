@@ -1,4 +1,4 @@
-import type { Course, CoursesResponse, FilterCourseDto } from '@/types';
+import type { Course, CoursesResponse, FilterCourseDto, CreateCourseDto, UpdateCourseDto } from '@/types';
 import fetchApi from './api';
 
 export const coursesService = {
@@ -31,5 +31,25 @@ export const coursesService = {
     async getById(id: number): Promise<Course> {
         const response = await fetchApi<Course>(`/courses/${id}`);
         return response.data;
+    },
+
+    async create(data: CreateCourseDto): Promise<Course> {
+        const response = await fetchApi<Course>('/courses', {
+            method: 'POST',
+            body: JSON.stringify(data),
+        });
+        return response.data;
+    },
+
+    async update(id: number, data: UpdateCourseDto): Promise<Course> {
+        const response = await fetchApi<Course>(`/courses/${id}`, {
+            method: 'PUT',
+            body: JSON.stringify(data),
+        });
+        return response.data;
+    },
+
+    async remove(id: number): Promise<void> {
+        await fetchApi<void>(`/courses/${id}`, { method: 'DELETE' });
     },
 };

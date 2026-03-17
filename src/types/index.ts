@@ -90,3 +90,53 @@ export interface FilterCourseDto {
     limit?: number;
 }
 
+export interface CreateCourseDto {
+    organizationId: number;
+    name: string;
+    description: string;
+    academicYear?: string;
+    enrollmentUrl: string;
+    startDate?: string;
+    endDate?: string;
+    isActive?: boolean;
+    categoryIds?: number[];
+}
+
+export interface UpdateCourseDto {
+    organizationId?: number;
+    name?: string;
+    description?: string;
+    academicYear?: string;
+    enrollmentUrl?: string;
+    startDate?: string;
+    endDate?: string;
+    isActive?: boolean;
+    categoryIds?: number[];
+}
+
+export interface CreateOrganizationDto {
+    name: string;
+    description?: string;
+    websiteUrl?: string;
+    contactEmail?: string;
+    logoUrl?: string;
+}
+
+export interface UpdateOrganizationDto {
+    name?: string;
+    description?: string;
+    websiteUrl?: string;
+    contactEmail?: string;
+    logoUrl?: string;
+}
+
+export type AdminRole = 'admin' | 'user';
+
+export interface AdminUser {
+    id: number;
+    fullName: string;
+    email: string;
+    role: AdminRole;
+    isActive: boolean;
+}
+

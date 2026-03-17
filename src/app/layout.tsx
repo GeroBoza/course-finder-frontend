@@ -1,7 +1,5 @@
 import type { Metadata } from 'next';
 import './globals.css';
-import Navbar from '@/components/Navbar';
-import Footer from '@/components/Footer';
 
 export const metadata: Metadata = {
     title: 'Cursos Platform - Encontrá el curso ideal',
@@ -16,13 +14,7 @@ export default function RootLayout({
 }) {
     return (
         <html lang="es">
-            <body className="font-sans">
-                <div className="flex flex-col min-h-screen">
-                    <Navbar />
-                    <main className="flex-grow">{children}</main>
-                    <Footer />
-                </div>
-            </body>
+            <body className="font-sans">{children}</body>
         </html>
     );
 }

@@ -27,11 +27,11 @@ export default function SearchBar({ initialValue = '', className = '' }: SearchB
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     placeholder="Buscar cursos..."
-                    className="flex-1 px-6 py-4 bg-white/95 backdrop-blur-sm border-2 border-white/50 rounded-2xl focus:outline-none focus:ring-4 focus:ring-orange-300 focus:border-orange-500 text-gray-900 placeholder-gray-400 shadow-lg text-lg font-medium transition-all duration-300"
+                    className="flex-1 px-6 py-4 bg-white/95 backdrop-blur-sm border-2 border-white/50 rounded-2xl focus:outline-none focus:ring-4 focus:ring-[#c4a84a]/50 focus:border-[#b8962e] text-gray-900 placeholder-gray-400 shadow-lg text-lg font-medium transition-all duration-300"
                 />
                 <button
                     type="submit"
-                    className="px-8 py-4 bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-2xl hover:from-orange-600 hover:to-orange-700 transition-all duration-300 font-semibold shadow-xl hover:shadow-2xl transform hover:scale-105 active:scale-95 text-lg"
+                    className="px-8 py-4 bg-gradient-to-r from-[#b8962e] to-[#9a7b26] text-white rounded-2xl hover:from-[#9a7b26] hover:to-[#7d631e] transition-all duration-300 font-semibold shadow-xl hover:shadow-2xl transform hover:scale-105 active:scale-95 text-lg"
                 >
                     Buscar
                 </button>

@@ -26,7 +26,7 @@ export default function CourseCard({ course }: CourseCardProps) {
                 </div>
             )}
             <div className="p-6 flex flex-col flex-1 min-h-0">
-                <h3 className="text-xl font-bold text-gray-900 mb-2 line-clamp-2 group-hover:text-green-600 transition-colors duration-200">
+                <h3 className="text-xl font-bold text-gray-900 mb-2 line-clamp-2 group-hover:text-blue-800 transition-colors duration-200">
                     {course.name}
                 </h3>
                 {course.organization && (
