@@ -32,6 +32,7 @@ const navItems: NavItem[] = [
         children: [
             { label: 'Ver cursos', href: '/dashboard/courses' },
             { label: 'Agregar curso', href: '/dashboard/courses/new' },
+            { label: 'Importar cursos', href: '/dashboard/courses/import' },
         ],
     },
     {
