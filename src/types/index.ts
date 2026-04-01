@@ -130,6 +130,17 @@ export interface UpdateOrganizationDto {
     logoUrl?: string;
 }
 
+export interface ImportRowError {
+    fila: number;
+    motivo: string;
+}
+
+export interface ImportResult {
+    importados: number;
+    omitidos: number;
+    errores: ImportRowError[];
+}
+
 export type AdminRole = 'admin' | 'user';
 
 export interface AdminUser {

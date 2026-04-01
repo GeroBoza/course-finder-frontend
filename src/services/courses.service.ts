@@ -1,5 +1,8 @@
-import type { Course, CoursesResponse, FilterCourseDto, CreateCourseDto, UpdateCourseDto } from '@/types';
+import type { Course, CoursesResponse, FilterCourseDto, CreateCourseDto, UpdateCourseDto, ImportResult } from '@/types';
 import fetchApi from './api';
+
+const API_BASE_URL =
+    process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3000/api';
 
 export const coursesService = {
     async getAll(filters?: FilterCourseDto): Promise<CoursesResponse> {
@@ -51,5 +54,25 @@ export const coursesService = {
 
     async remove(id: number): Promise<void> {
         await fetchApi<void>(`/courses/${id}`, { method: 'DELETE' });
+    },
+
+    async importFile(file: File): Promise<ImportResult> {
+        const formData = new FormData();
+        formData.append('file', file);
+
+        const response = await fetch(`${API_BASE_URL}/courses/import`, {
+            method: 'POST',
+            body: formData,
+            // No Content-Type header — browser sets it with the correct boundary for multipart
+        });
+
+        if (!response.ok) {
+            const err = await response.json().catch(() => ({}));
+            throw new Error(err?.message ?? `Error ${response.status}`);
+        }
+
+        const result = await response.json();
+        // Unwrap transform interceptor envelope if present
+        return (result?.data ?? result) as ImportResult;
     },
 };
