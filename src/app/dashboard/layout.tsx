@@ -16,14 +16,25 @@ export default function DashboardLayout({
     const [checking, setChecking] = useState(true);
 
     useEffect(() => {
-        authService.getCurrentUser().then((currentUser) => {
-            if (!authService.isAdmin(currentUser)) {
-                router.replace('/');
+        const verifyAccess = async () => {
+            if (!authService.isAuthenticated()) {
+                router.replace('/login');
                 return;
             }
+
+            const currentUser = await authService.getCurrentUser();
+
+            if (!authService.isAdmin(currentUser)) {
+                authService.logout();
+                router.replace('/login');
+                return;
+            }
+
             setUser(currentUser);
             setChecking(false);
-        });
+        };
+
+        verifyAccess();
     }, [router]);
 
     if (checking) {
@@ -43,8 +54,7 @@ export default function DashboardLayout({
         <div className="flex min-h-screen bg-gray-50">
             <DashboardSidebar user={user} />
             <div className="flex-1 flex flex-col min-w-0">
-                {/* Top bar */}
-                <header className="h-16 bg-white border-b border-gray-200 flex items-center px-8 shadow-sm flex-shrink-0">
+                <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-8 shadow-sm flex-shrink-0">
                     <p className="text-sm text-gray-500">
                         Bienvenido,{' '}
                         <span className="font-semibold text-gray-800">{user.fullName}</span>

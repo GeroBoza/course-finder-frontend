@@ -1,8 +1,6 @@
 import type { Course, CoursesResponse, FilterCourseDto, CreateCourseDto, UpdateCourseDto, ImportResult } from '@/types';
-import fetchApi from './api';
-
-const API_BASE_URL =
-    process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3000/api';
+import fetchApi, { API_BASE_URL } from './api';
+import { getToken } from '@/lib/auth-token';
 
 export const coursesService = {
     async getAll(filters?: FilterCourseDto): Promise<CoursesResponse> {
@@ -27,7 +25,6 @@ export const coursesService = {
         const endpoint = queryString ? `/courses?${queryString}` : '/courses';
 
         const response = await fetchApi<CoursesResponse>(endpoint);
-        console.log(response);
         return response.data;
     },
 
@@ -60,10 +57,16 @@ export const coursesService = {
         const formData = new FormData();
         formData.append('file', file);
 
+        const headers: Record<string, string> = {};
+        const token = getToken();
+        if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
+        }
+
         const response = await fetch(`${API_BASE_URL}/courses/import`, {
             method: 'POST',
             body: formData,
-            // No Content-Type header — browser sets it with the correct boundary for multipart
+            headers,
         });
 
         if (!response.ok) {
@@ -72,7 +75,6 @@ export const coursesService = {
         }
 
         const result = await response.json();
-        // Unwrap transform interceptor envelope if present
         return (result?.data ?? result) as ImportResult;
     },
 };
