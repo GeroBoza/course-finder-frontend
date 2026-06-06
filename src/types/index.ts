@@ -141,7 +141,7 @@ export interface ImportResult {
     errores: ImportRowError[];
 }
 
-export type AdminRole = 'admin' | 'user';
+export type AdminRole = 'superadmin' | 'admin' | 'user';
 
 export interface AdminUser {
     id: number;
@@ -149,5 +149,15 @@ export interface AdminUser {
     email: string;
     role: AdminRole;
     isActive: boolean;
+}
+
+export interface LoginDto {
+    email: string;
+    password: string;
+}
+
+export interface AuthResponse {
+    accessToken: string;
+    user: AdminUser;
 }
 
