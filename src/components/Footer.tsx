@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import Link from 'next/link';
 
 export default function Footer() {
@@ -10,9 +11,22 @@ export default function Footer() {
             <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
                     <div>
-                        <h3 className="text-2xl font-extrabold mb-4 bg-gradient-to-r from-[#c4a84a] to-[#e8dfc4] bg-clip-text text-transparent">
-                            CapaContinua
-                        </h3>
+                        <Link
+                            href="/"
+                            aria-label="CapaContinua"
+                            className="inline-flex flex-col items-center gap-2 mb-4 hover:opacity-90 transition-opacity duration-200"
+                        >
+                            <Image
+                                src="/images/capacontinua_icon.svg"
+                                alt=""
+                                width={699}
+                                height={509}
+                                className="h-14 w-auto object-contain"
+                            />
+                            <span className="text-2xl font-extrabold bg-gradient-to-r from-[#c4a84a] to-[#e8dfc4] bg-clip-text text-transparent">
+                                CapaContinua
+                            </span>
+                        </Link>
                         <p className="text-blue-200 leading-relaxed">
                             Encontrá el curso ideal para tu desarrollo
                             profesional

@@ -1,8 +1,8 @@
 'use client';
 
+import { useAuth } from '@/contexts/AuthContext';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useAuth } from '@/contexts/AuthContext';
 
 export default function Navbar() {
     const { isAuthenticated, isLoading } = useAuth();
@@ -16,11 +16,11 @@ export default function Navbar() {
                         className="flex items-center hover:opacity-90 transition-opacity duration-200"
                     >
                         <Image
-                            src="/images/logo.png"
+                            src="/images/capacontinua_icon.svg"
                             alt="CapaContinua"
-                            width={380}
-                            height={100}
-                            className="h-10 w-auto md:h-12 object-contain rounded-lg"
+                            width={750}
+                            height={600}
+                            className="h-10 w-auto md:h-12 object-contain"
                             priority
                         />
                     </Link>
