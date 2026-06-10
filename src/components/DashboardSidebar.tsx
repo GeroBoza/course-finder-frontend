@@ -69,9 +69,9 @@ export default function DashboardSidebar({ user }: DashboardSidebarProps) {
         href === '/dashboard' ? pathname === href : pathname.startsWith(href);
 
     return (
-        <aside className="w-64 min-h-screen bg-gradient-to-b from-blue-900 to-blue-950 text-white flex flex-col shadow-xl flex-shrink-0">
+        <aside className="w-64 h-screen bg-gradient-to-b from-blue-900 to-blue-950 text-white flex flex-col shadow-xl flex-shrink-0">
             {/* Logo / Header */}
-            <div className="px-6 py-6 border-b border-blue-800/60">
+            <div className="px-6 py-6 border-b border-blue-800/60 flex-shrink-0">
                 <Link href="/dashboard" className="block">
                     <span className="text-lg font-extrabold bg-gradient-to-r from-[#c4a84a] to-[#e8dfc4] bg-clip-text text-transparent leading-tight">
                         CapaContinua
@@ -123,7 +123,7 @@ export default function DashboardSidebar({ user }: DashboardSidebarProps) {
             </nav>
 
             {/* User info */}
-            <div className="px-4 py-4 border-t border-blue-800/60">
+            <div className="px-4 py-4 border-t border-blue-800/60 flex-shrink-0">
                 <div className="flex items-center gap-3">
                     <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#b8962e] to-[#9a7b26] flex items-center justify-center flex-shrink-0 shadow">
                         <span className="text-white text-sm font-bold">
