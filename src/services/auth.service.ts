@@ -1,21 +1,46 @@
-import type { AdminUser } from '@/types';
+import fetchApi, { ApiError } from './api';
+import { clearToken, getToken, setToken } from '@/lib/auth-token';
+import type { AdminUser, AuthResponse, LoginDto } from '@/types';
 
-// Mock: simula validación de token devolviendo siempre un usuario admin.
-// Reemplazar por llamada real a la API cuando el backend de auth esté disponible.
+const ADMIN_ROLES = ['superadmin', 'admin'];
+
 export const authService = {
-    async getCurrentUser(): Promise<AdminUser | null> {
-        await new Promise((resolve) => setTimeout(resolve, 300));
+    async login(credentials: LoginDto): Promise<AuthResponse> {
+        const response = await fetchApi<AuthResponse>('/auth/login', {
+            method: 'POST',
+            body: JSON.stringify(credentials),
+        });
 
-        return {
-            id: 1,
-            fullName: 'Admin CapaContinua',
-            email: 'admin@capacontinua.com',
-            role: 'admin',
-            isActive: true,
-        };
+        setToken(response.data.accessToken);
+        return response.data;
+    },
+
+    logout(): void {
+        clearToken();
+    },
+
+    isAuthenticated(): boolean {
+        return !!getToken();
+    },
+
+    async getCurrentUser(): Promise<AdminUser | null> {
+        if (!getToken()) {
+            return null;
+        }
+
+        try {
+            const response = await fetchApi<AdminUser>('/auth/me');
+            return response.data;
+        } catch (error) {
+            if (error instanceof ApiError && error.status === 401) {
+                clearToken();
+            }
+            return null;
+        }
     },
 
     isAdmin(user: AdminUser | null): boolean {
-        return user?.role === 'admin' && user.isActive === true;
+        if (!user?.isActive) return false;
+        return ADMIN_ROLES.includes(user.role.toLowerCase());
     },
 };

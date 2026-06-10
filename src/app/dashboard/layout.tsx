@@ -1,10 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { authService } from '@/services/auth.service';
+import { useAuth } from '@/contexts/AuthContext';
 import DashboardSidebar from '@/components/DashboardSidebar';
-import type { AdminUser } from '@/types';
 
 export default function DashboardLayout({
     children,
@@ -12,21 +11,15 @@ export default function DashboardLayout({
     children: React.ReactNode;
 }) {
     const router = useRouter();
-    const [user, setUser] = useState<AdminUser | null>(null);
-    const [checking, setChecking] = useState(true);
+    const { user, isAuthenticated, isLoading } = useAuth();
 
     useEffect(() => {
-        authService.getCurrentUser().then((currentUser) => {
-            if (!authService.isAdmin(currentUser)) {
-                router.replace('/');
-                return;
-            }
-            setUser(currentUser);
-            setChecking(false);
-        });
-    }, [router]);
+        if (!isLoading && !isAuthenticated) {
+            router.replace('/login');
+        }
+    }, [isLoading, isAuthenticated, router]);
 
-    if (checking) {
+    if (isLoading) {
         return (
             <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-blue-950 to-blue-900">
                 <div className="text-center">
@@ -43,8 +36,7 @@ export default function DashboardLayout({
         <div className="flex min-h-screen bg-gray-50">
             <DashboardSidebar user={user} />
             <div className="flex-1 flex flex-col min-w-0">
-                {/* Top bar */}
-                <header className="h-16 bg-white border-b border-gray-200 flex items-center px-8 shadow-sm flex-shrink-0">
+                <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-8 shadow-sm flex-shrink-0">
                     <p className="text-sm text-gray-500">
                         Bienvenido,{' '}
                         <span className="font-semibold text-gray-800">{user.fullName}</span>

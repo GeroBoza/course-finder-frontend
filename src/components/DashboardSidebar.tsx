@@ -1,7 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
+import { useAuth } from '@/contexts/AuthContext';
 import type { AdminUser } from '@/types';
 
 interface NavItem {
@@ -56,6 +57,13 @@ interface DashboardSidebarProps {
 
 export default function DashboardSidebar({ user }: DashboardSidebarProps) {
     const pathname = usePathname();
+    const router = useRouter();
+    const { logout } = useAuth();
+
+    const handleLogout = () => {
+        logout();
+        router.replace('/login');
+    };
 
     const isActive = (href: string) =>
         href === '/dashboard' ? pathname === href : pathname.startsWith(href);
@@ -127,15 +135,27 @@ export default function DashboardSidebar({ user }: DashboardSidebarProps) {
                         <p className="text-xs text-blue-300 truncate">{user.email}</p>
                     </div>
                 </div>
-                <Link
-                    href="/"
-                    className="mt-3 flex items-center gap-2 text-xs text-blue-300 hover:text-white transition-colors duration-200"
-                >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                    </svg>
-                    Volver al sitio
-                </Link>
+                <div className="mt-3 space-y-2">
+                    <Link
+                        href="/"
+                        className="flex items-center gap-2 text-xs text-blue-300 hover:text-white transition-colors duration-200"
+                    >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                        </svg>
+                        Volver al sitio
+                    </Link>
+                    <button
+                        type="button"
+                        onClick={handleLogout}
+                        className="flex items-center gap-2 text-xs text-blue-300 hover:text-white transition-colors duration-200"
+                    >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                        </svg>
+                        Cerrar sesión
+                    </button>
+                </div>
             </div>
         </aside>
     );
