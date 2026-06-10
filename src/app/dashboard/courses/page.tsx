@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { categoriesService } from '@/services/categories.service';
 import { coursesService } from '@/services/courses.service';
+import { ApiError } from '@/services/api';
 import type { Category, Course } from '@/types';
 import CategoryBadge from '@/components/CategoryBadge';
 import Button from '@/components/Button';
@@ -227,10 +228,15 @@ export default function DashboardCoursesPage() {
                 categoryId,
                 limit: 100,
                 page: 1,
+                includeInactive: true,
             });
             setCourses(res.data);
-        } catch {
-            setError('No se pudieron cargar los cursos.');
+        } catch (err) {
+            const message =
+                err instanceof ApiError
+                    ? err.message
+                    : 'No se pudieron cargar los cursos.';
+            setError(message);
         } finally {
             setLoading(false);
         }
@@ -238,14 +244,20 @@ export default function DashboardCoursesPage() {
 
     useEffect(() => {
         Promise.all([
-            coursesService.getAll({ limit: 100, page: 1 }),
+            coursesService.getAll({ limit: 100, page: 1, includeInactive: true }),
             categoriesService.getAll(),
         ])
             .then(([res, cats]) => {
                 setCourses(res.data);
                 setCategories(cats);
             })
-            .catch(() => setError('No se pudieron cargar los datos.'))
+            .catch((err) => {
+                const message =
+                    err instanceof ApiError
+                        ? err.message
+                        : 'No se pudieron cargar los datos.';
+                setError(message);
+            })
             .finally(() => setLoading(false));
     }, []);
 

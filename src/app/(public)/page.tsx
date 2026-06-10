@@ -49,7 +49,10 @@ export default async function Home() {
                             Cursos Destacados
                         </h2>
                         <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-                            Descubrí los cursos más populares y mejor valorados
+                            Descubrí los cursos más populares y mejor valorados.
+                        </p>
+                        <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+                            Calidad certificada
                         </p>
                     </div>
                     <CourseCarousel courses={featuredCourses} />

@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import RootProviders from '@/components/providers/RootProviders';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -14,7 +15,9 @@ export default function RootLayout({
 }) {
     return (
         <html lang="es">
-            <body className="font-sans">{children}</body>
+            <body className="font-sans">
+                <RootProviders>{children}</RootProviders>
+            </body>
         </html>
     );
 }

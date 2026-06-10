@@ -7,6 +7,7 @@ export interface Course {
     startDate: string | null;
     endDate: string | null;
     isActive: boolean;
+    viewCount: number;
     createdAt: string;
     updatedAt: string;
     organizationId: number;
@@ -88,6 +89,7 @@ export interface FilterCourseDto {
     academicYear?: string;
     page?: number;
     limit?: number;
+    includeInactive?: boolean;
 }
 
 export interface CreateCourseDto {
@@ -159,5 +161,9 @@ export interface LoginDto {
 export interface AuthResponse {
     accessToken: string;
     user: AdminUser;
+}
+
+export interface ViewCountResponse {
+    viewCount: number;
 }
 

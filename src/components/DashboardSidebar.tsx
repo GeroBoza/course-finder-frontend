@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { authService } from '@/services/auth.service';
+import { useAuth } from '@/contexts/AuthContext';
 import type { AdminUser } from '@/types';
 
 interface NavItem {
@@ -58,9 +58,10 @@ interface DashboardSidebarProps {
 export default function DashboardSidebar({ user }: DashboardSidebarProps) {
     const pathname = usePathname();
     const router = useRouter();
+    const { logout } = useAuth();
 
     const handleLogout = () => {
-        authService.logout();
+        logout();
         router.replace('/login');
     };
 
