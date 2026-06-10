@@ -33,16 +33,16 @@ export default function DashboardLayout({
     if (!user) return null;
 
     return (
-        <div className="flex min-h-screen bg-gray-50">
+        <div className="flex h-screen overflow-hidden bg-gray-50">
             <DashboardSidebar user={user} />
-            <div className="flex-1 flex flex-col min-w-0">
+            <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
                 <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-8 shadow-sm flex-shrink-0">
                     <p className="text-sm text-gray-500">
                         Bienvenido,{' '}
                         <span className="font-semibold text-gray-800">{user.fullName}</span>
                     </p>
                 </header>
-                <main className="flex-1 p-8 overflow-y-auto">
+                <main className="flex-1 overflow-y-auto p-8">
                     {children}
                 </main>
             </div>
