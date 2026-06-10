@@ -60,8 +60,16 @@ async function fetchApi<T>(
         );
     }
 
-    const result = await response.json();
-    return result;
+    if (response.status === 204) {
+        return { status: 204, data: undefined as T };
+    }
+
+    const text = await response.text();
+    if (!text) {
+        return { status: response.status, data: undefined as T };
+    }
+
+    return JSON.parse(text);
 }
 
 export { API_BASE_URL };

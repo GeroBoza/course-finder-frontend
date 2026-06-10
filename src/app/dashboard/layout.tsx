@@ -1,10 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { authService } from '@/services/auth.service';
+import { useAuth } from '@/contexts/AuthContext';
 import DashboardSidebar from '@/components/DashboardSidebar';
-import type { AdminUser } from '@/types';
 
 export default function DashboardLayout({
     children,
@@ -12,32 +11,15 @@ export default function DashboardLayout({
     children: React.ReactNode;
 }) {
     const router = useRouter();
-    const [user, setUser] = useState<AdminUser | null>(null);
-    const [checking, setChecking] = useState(true);
+    const { user, isAuthenticated, isLoading } = useAuth();
 
     useEffect(() => {
-        const verifyAccess = async () => {
-            if (!authService.isAuthenticated()) {
-                router.replace('/login');
-                return;
-            }
+        if (!isLoading && !isAuthenticated) {
+            router.replace('/login');
+        }
+    }, [isLoading, isAuthenticated, router]);
 
-            const currentUser = await authService.getCurrentUser();
-
-            if (!authService.isAdmin(currentUser)) {
-                authService.logout();
-                router.replace('/login');
-                return;
-            }
-
-            setUser(currentUser);
-            setChecking(false);
-        };
-
-        verifyAccess();
-    }, [router]);
-
-    if (checking) {
+    if (isLoading) {
         return (
             <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-blue-950 to-blue-900">
                 <div className="text-center">

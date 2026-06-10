@@ -4,28 +4,24 @@ import { FormEvent, Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { authService } from '@/services/auth.service';
+import { useAuth } from '@/contexts/AuthContext';
 import Button from '@/components/Button';
 
 function LoginForm() {
     const router = useRouter();
     const searchParams = useSearchParams();
+    const { isAuthenticated, isLoading, refreshAuth } = useAuth();
     const redirect = searchParams.get('redirect') || '/dashboard';
 
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
-    const [checking, setChecking] = useState(true);
-
     useEffect(() => {
-        authService.getCurrentUser().then((user) => {
-            if (authService.isAdmin(user)) {
-                router.replace(redirect);
-                return;
-            }
-            setChecking(false);
-        });
-    }, [router, redirect]);
+        if (!isLoading && isAuthenticated) {
+            router.replace(redirect);
+        }
+    }, [isLoading, isAuthenticated, router, redirect]);
 
     const handleSubmit = async (e: FormEvent) => {
         e.preventDefault();
@@ -41,6 +37,7 @@ function LoginForm() {
                 return;
             }
 
+            await refreshAuth();
             router.replace(redirect);
         } catch {
             setError('Credenciales inválidas. Verificá tu email y contraseña.');
@@ -49,7 +46,7 @@ function LoginForm() {
         }
     };
 
-    if (checking) {
+    if (isLoading) {
         return (
             <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-blue-950 to-blue-900">
                 <div className="inline-block w-10 h-10 border-4 border-[#c4a84a] border-t-transparent rounded-full animate-spin" />

@@ -191,12 +191,26 @@ function LogoAvatar({ org }: { org: Organization }) {
     );
 }
 
+type CopyListState = 'idle' | 'copied' | 'error';
+
+function formatOrganizationsForClipboard(organizations: Organization[]): string {
+    if (organizations.length === 0) {
+        return 'No hay organizaciones cargadas en la plataforma.';
+    }
+
+    return [...organizations]
+        .sort((a, b) => a.name.localeCompare(b.name, 'es'))
+        .map((org) => `- ${org.name}`)
+        .join('\n');
+}
+
 // ─── Main page ────────────────────────────────────────────────────────────────
 
 export default function DashboardOrganizationsPage() {
     const [organizations, setOrganizations] = useState<Organization[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [copyListState, setCopyListState] = useState<CopyListState>('idle');
 
     const [searchName, setSearchName] = useState('');
     const [openMenuId, setOpenMenuId] = useState<number | null>(null);
@@ -224,6 +238,18 @@ export default function DashboardOrganizationsPage() {
         o.name.toLowerCase().includes(searchName.toLowerCase()),
     );
 
+    const handleCopyOrganizationsList = async () => {
+        try {
+            const text = formatOrganizationsForClipboard(organizations);
+            await navigator.clipboard.writeText(text);
+            setCopyListState('copied');
+            window.setTimeout(() => setCopyListState('idle'), 3000);
+        } catch {
+            setCopyListState('error');
+            window.setTimeout(() => setCopyListState('idle'), 4000);
+        }
+    };
+
     const handleDeleteConfirm = async () => {
         if (!deleteTarget) return;
         setDeletingId(deleteTarget.id);
@@ -231,8 +257,12 @@ export default function DashboardOrganizationsPage() {
             await organizationsService.remove(deleteTarget.id);
             setOrganizations((prev) => prev.filter((o) => o.id !== deleteTarget.id));
             setDeleteTarget(null);
-        } catch {
-            setError('No se pudo eliminar la organización. Intentá nuevamente.');
+        } catch (err) {
+            const message =
+                err instanceof Error && err.message
+                    ? err.message
+                    : 'No se pudo eliminar la organización. Intentá nuevamente.';
+            setError(message);
             setDeleteTarget(null);
         } finally {
             setDeletingId(null);
@@ -249,13 +279,46 @@ export default function DashboardOrganizationsPage() {
                         {!loading && `${filteredOrgs.length} organización${filteredOrgs.length !== 1 ? 'es' : ''} encontrada${filteredOrgs.length !== 1 ? 's' : ''}`}
                     </p>
                 </div>
-                <Button href="/dashboard/organizations/new" variant="primary" size="md">
-                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                    </svg>
-                    Agregar organización
-                </Button>
+                <div className="flex items-center gap-3 flex-wrap">
+                    <button
+                        type="button"
+                        onClick={handleCopyOrganizationsList}
+                        disabled={loading || organizations.length === 0}
+                        className="inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold text-violet-900 bg-violet-50 border border-violet-200 rounded-xl hover:bg-violet-100 transition-colors whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        {copyListState === 'copied' ? (
+                            <>
+                                <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                </svg>
+                                ¡Copiado!
+                            </>
+                        ) : (
+                            <>
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                </svg>
+                                Copiar listado de organizaciones
+                            </>
+                        )}
+                    </button>
+                    <Button href="/dashboard/organizations/new" variant="primary" size="md">
+                        <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                        </svg>
+                        Agregar organización
+                    </Button>
+                </div>
             </div>
+
+            {copyListState === 'error' && (
+                <div className="mb-6 flex items-center gap-3 bg-red-50 border border-red-200 text-red-700 rounded-xl px-5 py-3 text-sm">
+                    <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    No se pudo copiar el listado. Verificá los permisos del navegador e intentá de nuevo.
+                </div>
+            )}
 
             {/* Error banner */}
             {error && (

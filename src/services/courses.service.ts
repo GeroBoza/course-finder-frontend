@@ -1,4 +1,4 @@
-import type { Course, CoursesResponse, FilterCourseDto, CreateCourseDto, UpdateCourseDto, ImportResult } from '@/types';
+import type { Course, CoursesResponse, FilterCourseDto, CreateCourseDto, UpdateCourseDto, ImportResult, ViewCountResponse } from '@/types';
 import fetchApi, { API_BASE_URL } from './api';
 import { getToken } from '@/lib/auth-token';
 
@@ -20,6 +20,9 @@ export const coursesService = {
         if (filters?.limit) {
             params.append('limit', filters.limit.toString());
         }
+        if (filters?.includeInactive) {
+            params.append('includeInactive', 'true');
+        }
 
         const queryString = params.toString();
         const endpoint = queryString ? `/courses?${queryString}` : '/courses';
@@ -30,6 +33,13 @@ export const coursesService = {
 
     async getById(id: number): Promise<Course> {
         const response = await fetchApi<Course>(`/courses/${id}`);
+        return response.data;
+    },
+
+    async registerView(id: number): Promise<ViewCountResponse> {
+        const response = await fetchApi<ViewCountResponse>(`/courses/${id}/view`, {
+            method: 'POST',
+        });
         return response.data;
     },
 

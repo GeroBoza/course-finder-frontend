@@ -1,7 +1,10 @@
 'use client';
 
 import { useRef, useState } from 'react';
+import { buildChatGptCourseImportPrompt } from '@/constants/chatgpt-course-import-prompt';
+import { categoriesService } from '@/services/categories.service';
 import { coursesService } from '@/services/courses.service';
+import { organizationsService } from '@/services/organizations.service';
 import type { ImportResult } from '@/types';
 import Button from '@/components/Button';
 
@@ -9,6 +12,7 @@ const ACCEPTED_EXTENSIONS = ['.xlsx'];
 const MAX_SIZE_MB = 5;
 
 type UploadState = 'idle' | 'uploading' | 'done' | 'error';
+type CopyPromptState = 'idle' | 'copying' | 'copied' | 'error';
 
 // ─── Result summary panel ─────────────────────────────────────────────────────
 
@@ -81,6 +85,7 @@ export default function ImportCoursesPage() {
     const [validationError, setValidationError] = useState<string | null>(null);
     const [uploadError, setUploadError] = useState<string | null>(null);
     const [result, setResult] = useState<ImportResult | null>(null);
+    const [copyPromptState, setCopyPromptState] = useState<CopyPromptState>('idle');
 
     const inputRef = useRef<HTMLInputElement>(null);
 
@@ -136,6 +141,28 @@ export default function ImportCoursesPage() {
         if (inputRef.current) inputRef.current.value = '';
     };
 
+    const handleCopyChatGptPrompt = async () => {
+        setCopyPromptState('copying');
+        try {
+            const [organizations, categories] = await Promise.all([
+                organizationsService.getAll(),
+                categoriesService.getAll(),
+            ]);
+
+            const prompt = buildChatGptCourseImportPrompt(
+                organizations.map((org) => org.name),
+                categories.map((cat) => cat.name),
+            );
+
+            await navigator.clipboard.writeText(prompt);
+            setCopyPromptState('copied');
+            window.setTimeout(() => setCopyPromptState('idle'), 3000);
+        } catch {
+            setCopyPromptState('error');
+            window.setTimeout(() => setCopyPromptState('idle'), 4000);
+        }
+    };
+
     return (
         <div className="max-w-2xl animate-fade-in">
             {/* Header */}
@@ -156,6 +183,54 @@ export default function ImportCoursesPage() {
                 <ImportResultPanel result={result} onReset={handleReset} />
             ) : (
                 <div className="space-y-6">
+                    {/* ChatGPT prompt helper */}
+                    <div className="bg-violet-50 border border-violet-200 rounded-2xl px-5 py-4">
+                        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+                            <div>
+                                <p className="text-sm font-semibold text-violet-900 mb-1">Generar Excel con ChatGPT</p>
+                                <p className="text-sm text-violet-800">
+                                    Copiá el prompt de investigación, pegalo en un chat nuevo de ChatGPT y respondé las
+                                    preguntas que te haga. Incluye las organizaciones y categorías actuales de la plataforma.
+                                </p>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={handleCopyChatGptPrompt}
+                                disabled={copyPromptState === 'copying'}
+                                className="inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold text-violet-900 bg-white border border-violet-300 rounded-xl hover:bg-violet-100 transition-colors whitespace-nowrap disabled:opacity-60 disabled:cursor-not-allowed flex-shrink-0"
+                            >
+                                {copyPromptState === 'copying' ? (
+                                    <>
+                                        <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                                        </svg>
+                                        Copiando...
+                                    </>
+                                ) : copyPromptState === 'copied' ? (
+                                    <>
+                                        <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                        </svg>
+                                        ¡Copiado!
+                                    </>
+                                ) : (
+                                    <>
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                        </svg>
+                                        Copiar prompt CHAT GPT
+                                    </>
+                                )}
+                            </button>
+                        </div>
+                        {copyPromptState === 'error' && (
+                            <p className="text-xs text-red-600 mt-3">
+                                No se pudo copiar el prompt. Verificá los permisos del navegador e intentá de nuevo.
+                            </p>
+                        )}
+                    </div>
+
                     {/* Template info */}
                     <div className="bg-blue-50 border border-blue-200 rounded-2xl px-5 py-4">
                         <p className="text-sm font-semibold text-blue-800 mb-2">Formato del archivo</p>

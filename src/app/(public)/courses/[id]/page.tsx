@@ -1,15 +1,32 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { coursesService } from '@/services/courses.service';
 import { courseLeadsService } from '@/services/course-leads.service';
 import type { Course } from '@/types';
 import CategoryBadge from '@/components/CategoryBadge';
+import CourseViewCount from '@/components/CourseViewCount';
 import Button from '@/components/Button';
+
+function BackButton({ onClick }: { onClick: () => void }) {
+    return (
+        <button
+            type="button"
+            onClick={onClick}
+            className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-800 mb-6 transition-colors"
+        >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+            Volver
+        </button>
+    );
+}
 
 export default function CourseDetailPage() {
     const params = useParams();
+    const router = useRouter();
     const courseId = parseInt(params.id as string);
     const [course, setCourse] = useState<Course | null>(null);
     const [loading, setLoading] = useState(true);
@@ -21,9 +38,27 @@ export default function CourseDetailPage() {
 
     useEffect(() => {
         const fetchCourse = async () => {
+            if (!courseId || Number.isNaN(courseId)) {
+                setLoading(false);
+                return;
+            }
+
             try {
                 const data = await coursesService.getById(courseId);
                 setCourse(data);
+
+                const viewedKey = `course-viewed-${courseId}`;
+                if (!sessionStorage.getItem(viewedKey)) {
+                    try {
+                        const { viewCount } = await coursesService.registerView(courseId);
+                        setCourse((prev) =>
+                            prev ? { ...prev, viewCount } : prev,
+                        );
+                        sessionStorage.setItem(viewedKey, '1');
+                    } catch (error) {
+                        console.error('Error registering course view:', error);
+                    }
+                }
             } catch (error) {
                 console.error('Error fetching course:', error);
             } finally {
@@ -31,9 +66,7 @@ export default function CourseDetailPage() {
             }
         };
 
-        if (courseId) {
-            fetchCourse();
-        }
+        fetchCourse();
     }, [courseId]);
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -65,6 +98,7 @@ export default function CourseDetailPage() {
     if (loading) {
         return (
             <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+                <BackButton onClick={() => router.back()} />
                 <div className="animate-pulse">
                     <div className="h-8 bg-gray-200 rounded w-3/4 mb-4"></div>
                     <div className="h-4 bg-gray-200 rounded w-1/2 mb-8"></div>
@@ -82,6 +116,7 @@ export default function CourseDetailPage() {
     if (!course) {
         return (
             <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+                <BackButton onClick={() => router.back()} />
                 <p className="text-center text-gray-600">Curso no encontrado</p>
             </div>
         );
@@ -92,6 +127,7 @@ export default function CourseDetailPage() {
 
     return (
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+            <BackButton onClick={() => router.back()} />
             <div className="bg-white rounded-lg shadow-lg overflow-hidden">
                 {mainImage && (
                     <div className="h-64 md:h-96 bg-gray-200 overflow-hidden">
@@ -108,11 +144,14 @@ export default function CourseDetailPage() {
                         {course.name}
                     </h1>
 
-                    {course.organization && (
-                        <p className="text-xl text-gray-600 mb-4">
-                            {course.organization.name}
-                        </p>
-                    )}
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mb-4">
+                        {course.organization && (
+                            <p className="text-xl text-gray-600">
+                                {course.organization.name}
+                            </p>
+                        )}
+                        <CourseViewCount course={course} size="md" />
+                    </div>
 
                     {categories.length > 0 && (
                         <div className="flex flex-wrap gap-2 mb-6">
