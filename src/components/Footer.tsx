@@ -74,7 +74,7 @@ export default function Footer() {
                 </div>
                 <div className="border-t border-blue-950/50 mt-12 pt-8 text-center">
                     <p className="text-blue-300/90">
-                        &copy; 2024 Cursos Platform. Todos los derechos
+                        &copy; 2024 CapaContinua. Todos los derechos
                         reservados.
                     </p>
                 </div>
