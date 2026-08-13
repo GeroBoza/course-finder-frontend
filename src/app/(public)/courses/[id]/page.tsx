@@ -4,8 +4,10 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { coursesService } from '@/services/courses.service';
 import { courseLeadsService } from '@/services/course-leads.service';
+import { formatDateDDMMYYYY, isCourseNotVigente } from '@/lib/dates';
 import type { Course } from '@/types';
 import CategoryBadge from '@/components/CategoryBadge';
+import CourseNotVigenteBadge from '@/components/CourseNotVigenteBadge';
 import CourseViewCount from '@/components/CourseViewCount';
 import Button from '@/components/Button';
 
@@ -71,7 +73,7 @@ export default function CourseDetailPage() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!course) return;
+        if (!course || isCourseNotVigente(course.endDate)) return;
 
         setSubmitting(true);
         try {
@@ -124,6 +126,7 @@ export default function CourseDetailPage() {
 
     const mainImage = course.images?.find((img) => img.isMain) || course.images?.[0];
     const categories = course.courseCategories?.map((cc) => cc.category).filter(Boolean) || [];
+    const notVigente = isCourseNotVigente(course.endDate);
 
     return (
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -140,9 +143,14 @@ export default function CourseDetailPage() {
                 )}
 
                 <div className="p-8">
-                    <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-                        {course.name}
-                    </h1>
+                    <div className="flex flex-wrap items-center gap-3 mb-4">
+                        <h1 className="text-3xl md:text-4xl font-bold text-gray-900">
+                            {course.name}
+                        </h1>
+                        {notVigente && (
+                            <CourseNotVigenteBadge className="text-sm px-3 py-1.5" />
+                        )}
+                    </div>
 
                     <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mb-4">
                         {course.organization && (
@@ -170,78 +178,97 @@ export default function CourseDetailPage() {
                         </div>
                     )}
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-                        {course.academicYear && (
-                            <div>
-                                <span className="font-semibold">Año académico: </span>
-                                <span>{course.academicYear}</span>
-                            </div>
-                        )}
-                        {course.startDate && (
-                            <div>
-                                <span className="font-semibold">Fecha de inicio: </span>
-                                <span>{new Date(course.startDate).toLocaleDateString()}</span>
-                            </div>
-                        )}
-                        {course.endDate && (
-                            <div>
-                                <span className="font-semibold">Fecha de fin: </span>
-                                <span>{new Date(course.endDate).toLocaleDateString()}</span>
-                            </div>
-                        )}
-                    </div>
+                    {(course.academicYear || course.startDate || course.endDate) && (
+                        <div className="mb-8 space-y-2">
+                            {course.academicYear && (
+                                <div>
+                                    <span className="font-semibold">Año académico: </span>
+                                    <span>{course.academicYear}</span>
+                                </div>
+                            )}
+                            {(course.startDate || course.endDate) && (
+                                <div className="flex flex-wrap gap-x-8 gap-y-1">
+                                    {course.startDate && (
+                                        <div>
+                                            <span className="font-semibold">Fecha de inicio: </span>
+                                            <span>{formatDateDDMMYYYY(course.startDate)}</span>
+                                        </div>
+                                    )}
+                                    {course.endDate && (
+                                        <div>
+                                            <span className="font-semibold">Fecha de fin: </span>
+                                            <span>{formatDateDDMMYYYY(course.endDate)}</span>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                    )}
 
                     <div className="border-t pt-8">
                         <h2 className="text-2xl font-semibold mb-4">
                             Iniciar Inscripción
                         </h2>
-                        <form onSubmit={handleSubmit} className="space-y-4">
-                            <div>
-                                <label
-                                    htmlFor="fullName"
-                                    className="block text-sm font-medium text-gray-700 mb-2"
+                        {notVigente && (
+                            <p className="mb-4 text-sm text-slate-600">
+                                Este curso ya finalizó, por eso la inscripción no está disponible.
+                            </p>
+                        )}
+                        <fieldset
+                            disabled={notVigente}
+                            className={notVigente ? 'opacity-60' : undefined}
+                        >
+                            <form onSubmit={handleSubmit} className="space-y-4">
+                                <div>
+                                    <label
+                                        htmlFor="fullName"
+                                        className="block text-sm font-medium text-gray-700 mb-2"
+                                    >
+                                        Nombre completo
+                                    </label>
+                                    <input
+                                        type="text"
+                                        id="fullName"
+                                        required
+                                        disabled={notVigente}
+                                        value={formData.fullName}
+                                        onChange={(e) =>
+                                            setFormData({ ...formData, fullName: e.target.value })
+                                        }
+                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 disabled:bg-gray-100 disabled:text-gray-500 disabled:cursor-not-allowed"
+                                    />
+                                </div>
+                                <div>
+                                    <label
+                                        htmlFor="email"
+                                        className="block text-sm font-medium text-gray-700 mb-2"
+                                    >
+                                        Email
+                                    </label>
+                                    <input
+                                        type="email"
+                                        id="email"
+                                        required
+                                        disabled={notVigente}
+                                        value={formData.email}
+                                        onChange={(e) =>
+                                            setFormData({ ...formData, email: e.target.value })
+                                        }
+                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 disabled:bg-gray-100 disabled:text-gray-500 disabled:cursor-not-allowed"
+                                    />
+                                </div>
+                                <Button
+                                    type="submit"
+                                    variant="primary"
+                                    size="lg"
+                                    className="w-full"
+                                    disabled={notVigente || submitting}
+                                    onClick={() => {}}
                                 >
-                                    Nombre completo
-                                </label>
-                                <input
-                                    type="text"
-                                    id="fullName"
-                                    required
-                                    value={formData.fullName}
-                                    onChange={(e) =>
-                                        setFormData({ ...formData, fullName: e.target.value })
-                                    }
-                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-                                />
-                            </div>
-                            <div>
-                                <label
-                                    htmlFor="email"
-                                    className="block text-sm font-medium text-gray-700 mb-2"
-                                >
-                                    Email
-                                </label>
-                                <input
-                                    type="email"
-                                    id="email"
-                                    required
-                                    value={formData.email}
-                                    onChange={(e) =>
-                                        setFormData({ ...formData, email: e.target.value })
-                                    }
-                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-                                />
-                            </div>
-                            <Button
-                                type="submit"
-                                variant="primary"
-                                size="lg"
-                                className="w-full"
-                                onClick={() => {}}
-                            >
-                                {submitting ? 'Procesando...' : 'Iniciar inscripción'}
-                            </Button>
-                        </form>
+                                    {submitting ? 'Procesando...' : 'Iniciar inscripción'}
+                                </Button>
+                            </form>
+                        </fieldset>
                     </div>
                 </div>
             </div>
