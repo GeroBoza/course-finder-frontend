@@ -1,7 +1,9 @@
+import { isCourseNotVigente } from '@/lib/dates';
 import type { Course } from '@/types';
 import Link from 'next/link';
 import Button from './Button';
 import CategoryBadge from './CategoryBadge';
+import CourseNotVigenteBadge from './CourseNotVigenteBadge';
 import CourseViewCount from './CourseViewCount';
 
 interface CourseCardProps {
@@ -11,14 +13,22 @@ interface CourseCardProps {
 export default function CourseCard({ course }: CourseCardProps) {
     const categories =
         course.courseCategories?.map((cc) => cc.category).filter(Boolean) || [];
+    const notVigente = isCourseNotVigente(course.endDate);
 
     return (
         <div className="group flex flex-col h-full bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2 border border-gray-100">
             <div className="p-6 flex flex-col flex-1 min-h-0">
                 <div className="flex items-start justify-between gap-3 mb-2">
-                    <h3 className="text-xl font-bold text-gray-900 line-clamp-2 group-hover:text-blue-800 transition-colors duration-200">
-                        {course.name}
-                    </h3>
+                    <div className="min-w-0">
+                        <h3 className="text-xl font-bold text-gray-900 line-clamp-2 group-hover:text-blue-800 transition-colors duration-200">
+                            {course.name}
+                        </h3>
+                        {notVigente && (
+                            <div className="mt-2">
+                                <CourseNotVigenteBadge />
+                            </div>
+                        )}
+                    </div>
                     <CourseViewCount
                         course={course}
                         variant="compact"
