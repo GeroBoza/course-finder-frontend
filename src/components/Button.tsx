@@ -23,7 +23,7 @@ export default function Button({
     disabled = false,
 }: ButtonProps) {
     const baseStyles =
-        'inline-flex items-center justify-center font-semibold rounded-xl transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 transform hover:scale-105 active:scale-95';
+        'inline-flex items-center justify-center font-semibold rounded-xl transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 transform hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:pointer-events-none';
     const variants = {
         primary:
             'bg-gradient-to-r from-[#b8962e] to-[#9a7b26] text-white hover:from-[#9a7b26] hover:to-[#7d631e] focus:ring-[#b8962e] shadow-lg hover:shadow-xl',
