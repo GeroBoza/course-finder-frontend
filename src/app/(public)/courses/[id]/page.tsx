@@ -36,6 +36,7 @@ export default function CourseDetailPage() {
     const [formData, setFormData] = useState({
         fullName: '',
         email: '',
+        phone: '',
     });
 
     useEffect(() => {
@@ -75,21 +76,38 @@ export default function CourseDetailPage() {
         e.preventDefault();
         if (!course || isCourseNotVigente(course.endDate)) return;
 
+        // La pestaña se abre durante el click y no después del await, porque si
+        // no el navegador la bloquea como popup
+        const enrollmentTab = course.enrollmentUrl
+            ? window.open('', '_blank')
+            : null;
+
         setSubmitting(true);
         try {
             await courseLeadsService.create({
                 courseId: course.id,
                 fullName: formData.fullName,
                 email: formData.email,
+                phone: formData.phone,
             });
 
-            // Redirigir al enrollment_url si existe
+            // Abrir el enrollment_url en una nueva pestaña si existe
             if (course.enrollmentUrl) {
-                window.location.href = course.enrollmentUrl;
+                if (enrollmentTab) {
+                    enrollmentTab.opener = null;
+                    enrollmentTab.location.href = course.enrollmentUrl;
+                } else {
+                    window.open(
+                        course.enrollmentUrl,
+                        '_blank',
+                        'noopener,noreferrer',
+                    );
+                }
             } else {
                 alert('¡Inscripción registrada exitosamente!');
             }
         } catch (error) {
+            enrollmentTab?.close();
             console.error('Error creating lead:', error);
             alert('Error al procesar la inscripción. Por favor, intenta nuevamente.');
         } finally {
@@ -253,6 +271,25 @@ export default function CourseDetailPage() {
                                         value={formData.email}
                                         onChange={(e) =>
                                             setFormData({ ...formData, email: e.target.value })
+                                        }
+                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 disabled:bg-gray-100 disabled:text-gray-500 disabled:cursor-not-allowed"
+                                    />
+                                </div>
+                                <div>
+                                    <label
+                                        htmlFor="phone"
+                                        className="block text-sm font-medium text-gray-700 mb-2"
+                                    >
+                                        Teléfono
+                                    </label>
+                                    <input
+                                        type="tel"
+                                        id="phone"
+                                        required
+                                        disabled={notVigente}
+                                        value={formData.phone}
+                                        onChange={(e) =>
+                                            setFormData({ ...formData, phone: e.target.value })
                                         }
                                         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 disabled:bg-gray-100 disabled:text-gray-500 disabled:cursor-not-allowed"
                                     />

@@ -9,7 +9,7 @@ export default function Navbar() {
 
     return (
         <nav className="glass-effect border-b border-gray-200/50 sticky top-0 z-50 shadow-sm">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
                 <div className="flex justify-between items-center h-20">
                     <Link
                         href="/"
@@ -20,7 +20,7 @@ export default function Navbar() {
                             alt="CapaContinua"
                             width={750}
                             height={600}
-                            className="h-10 w-auto md:h-12 object-contain"
+                            className="h-24 w-auto md:h-24 object-contain"
                             priority
                         />
                     </Link>

@@ -63,6 +63,7 @@ export interface CourseLead {
     userId: number | null;
     fullName: string;
     email: string;
+    phone: string | null;
     ipAddress: string | null;
     userAgent: string | null;
     createdAt: string;
@@ -72,7 +73,15 @@ export interface CreateCourseLeadDto {
     courseId: number;
     fullName: string;
     email: string;
-    userId?: number;
+    phone: string;
+}
+
+export interface CourseStats {
+    courseId: number;
+    courseName: string;
+    viewCount: number;
+    leadsCount: number;
+    leads: CourseLead[];
 }
 
 export interface CoursesResponse {
