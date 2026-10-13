@@ -7,6 +7,7 @@ export interface Course {
     startDate: string | null;
     endDate: string | null;
     isActive: boolean;
+    isFeatured: boolean;
     viewCount: number;
     createdAt: string;
     updatedAt: string;
@@ -99,6 +100,8 @@ export interface FilterCourseDto {
     page?: number;
     limit?: number;
     includeInactive?: boolean;
+    search?: string;
+    isFeatured?: boolean;
 }
 
 export interface CreateCourseDto {
@@ -110,6 +113,7 @@ export interface CreateCourseDto {
     startDate?: string;
     endDate?: string;
     isActive?: boolean;
+    isFeatured?: boolean;
     categoryIds?: number[];
 }
 
@@ -122,6 +126,7 @@ export interface UpdateCourseDto {
     startDate?: string;
     endDate?: string;
     isActive?: boolean;
+    isFeatured?: boolean;
     categoryIds?: number[];
 }
 
@@ -146,10 +151,23 @@ export interface ImportRowError {
     motivo: string;
 }
 
+export interface MissingOrganization {
+    nombre: string;
+    filas: number[];
+    cursos: string[];
+}
+
 export interface ImportResult {
     importados: number;
     omitidos: number;
     errores: ImportRowError[];
+    organizacionesFaltantes: MissingOrganization[];
+    organizacionesCreadas: number;
+}
+
+export interface ChatgptImportPromptResponse {
+    prompt: string | null;
+    isDefault: boolean;
 }
 
 export type AdminRole = 'superadmin' | 'admin' | 'user';

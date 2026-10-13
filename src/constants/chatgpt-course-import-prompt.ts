@@ -420,12 +420,10 @@ function formatCatalogList(items: string[], emptyLabel: string): string {
 export function buildChatGptCourseImportPrompt(
     organizations: string[] = [],
     categories: string[] = [],
+    template: string = CHATGPT_COURSE_IMPORT_PROMPT_TEMPLATE,
 ): string {
     const orgList = formatCatalogList(organizations, ORGANIZATIONS_PLACEHOLDER);
     const catList = formatCatalogList(categories, CATEGORIES_PLACEHOLDER);
 
-    return CHATGPT_COURSE_IMPORT_PROMPT_TEMPLATE.replace('{{ORGANIZATIONS}}', orgList).replace(
-        '{{CATEGORIES}}',
-        catList,
-    );
+    return template.replace('{{ORGANIZATIONS}}', orgList).replace('{{CATEGORIES}}', catList);
 }

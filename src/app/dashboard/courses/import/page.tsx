@@ -1,11 +1,15 @@
 'use client';
 
-import { useRef, useState } from 'react';
-import { buildChatGptCourseImportPrompt } from '@/constants/chatgpt-course-import-prompt';
+import { useEffect, useRef, useState } from 'react';
+import {
+    buildChatGptCourseImportPrompt,
+    CHATGPT_COURSE_IMPORT_PROMPT_TEMPLATE,
+} from '@/constants/chatgpt-course-import-prompt';
 import { categoriesService } from '@/services/categories.service';
 import { coursesService } from '@/services/courses.service';
 import { organizationsService } from '@/services/organizations.service';
-import type { ImportResult } from '@/types';
+import { settingsService } from '@/services/settings.service';
+import type { ImportResult, MissingOrganization } from '@/types';
 import Button from '@/components/Button';
 
 const ACCEPTED_EXTENSIONS = ['.xlsx'];
@@ -14,10 +18,212 @@ const MAX_SIZE_MB = 5;
 type UploadState = 'idle' | 'uploading' | 'done' | 'error';
 type CopyPromptState = 'idle' | 'copying' | 'copied' | 'error';
 
+// ─── Missing organizations modal ──────────────────────────────────────────────
+
+function MissingOrgsModal({
+    organizations,
+    confirming,
+    onConfirm,
+    onDismiss,
+}: {
+    organizations: MissingOrganization[];
+    confirming: boolean;
+    onConfirm: () => void;
+    onDismiss: () => void;
+}) {
+    const courseCount = organizations.reduce((sum, org) => sum + org.cursos.length, 0);
+
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm px-4">
+            <div className="bg-white rounded-2xl shadow-strong w-full max-w-lg p-6 animate-scale-in max-h-[90vh] overflow-y-auto">
+                <h3 className="text-lg font-bold text-gray-900">Organizaciones no encontradas</h3>
+                <p className="mt-2 text-sm text-gray-600">
+                    Hay {organizations.length} organización{organizations.length !== 1 ? 'es' : ''} que no
+                    existen en el catálogo, asociadas a {courseCount} curso{courseCount !== 1 ? 's' : ''}.
+                    Si las creás, esos cursos se van a importar con la información básica obtenida de la
+                    investigación. Después vas a poder completar descripción, web y contacto.
+                </p>
+                <div className="mt-4 space-y-3 max-h-64 overflow-y-auto">
+                    {organizations.map((org) => (
+                        <div key={org.nombre} className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
+                            <p className="text-sm font-semibold text-amber-900">{org.nombre}</p>
+                            <ul className="mt-1.5 text-xs text-amber-800 list-disc list-inside space-y-0.5">
+                                {org.cursos.map((curso, i) => (
+                                    <li key={`${org.nombre}-${i}`}>{curso}</li>
+                                ))}
+                            </ul>
+                        </div>
+                    ))}
+                </div>
+                <div className="mt-6 flex justify-end gap-3">
+                    <button
+                        type="button"
+                        onClick={onDismiss}
+                        disabled={confirming}
+                        className="px-4 py-2 text-sm font-semibold text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors disabled:opacity-50"
+                    >
+                        Ahora no
+                    </button>
+                    <button
+                        type="button"
+                        onClick={onConfirm}
+                        disabled={confirming}
+                        className="px-4 py-2 text-sm font-semibold text-white bg-blue-700 hover:bg-blue-800 rounded-xl transition-colors disabled:opacity-50 flex items-center gap-2"
+                    >
+                        {confirming && (
+                            <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                            </svg>
+                        )}
+                        Crear e importar
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+// ─── Edit prompt modal ────────────────────────────────────────────────────────
+
+function EditPromptModal({
+    onClose,
+}: {
+    onClose: () => void;
+}) {
+    const [prompt, setPrompt] = useState('');
+    const [loading, setLoading] = useState(true);
+    const [saving, setSaving] = useState(false);
+    const [resetting, setResetting] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const [saved, setSaved] = useState(false);
+
+    useEffect(() => {
+        let cancelled = false;
+        const loadPrompt = async () => {
+            setLoading(true);
+            setError(null);
+            try {
+                const res = await settingsService.getChatgptImportPrompt();
+                if (!cancelled) {
+                    setPrompt(res.prompt ?? CHATGPT_COURSE_IMPORT_PROMPT_TEMPLATE);
+                }
+            } catch {
+                if (!cancelled) {
+                    setPrompt(CHATGPT_COURSE_IMPORT_PROMPT_TEMPLATE);
+                }
+            } finally {
+                if (!cancelled) setLoading(false);
+            }
+        };
+        void loadPrompt();
+        return () => {
+            cancelled = true;
+        };
+    }, []);
+
+    const handleSave = async () => {
+        if (!prompt.trim()) {
+            setError('El prompt no puede estar vacío.');
+            return;
+        }
+        setSaving(true);
+        setError(null);
+        try {
+            await settingsService.updateChatgptImportPrompt(prompt);
+            setSaved(true);
+            window.setTimeout(onClose, 800);
+        } catch {
+            setError('No se pudo guardar el prompt. Intentá de nuevo.');
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const handleReset = async () => {
+        setResetting(true);
+        setError(null);
+        try {
+            await settingsService.resetChatgptImportPrompt();
+            setPrompt(CHATGPT_COURSE_IMPORT_PROMPT_TEMPLATE);
+            setSaved(true);
+        } catch {
+            setError('No se pudo restaurar el prompt por defecto.');
+        } finally {
+            setResetting(false);
+        }
+    };
+
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm px-4">
+            <div className="bg-white rounded-2xl shadow-strong w-full max-w-3xl p-6 animate-scale-in max-h-[90vh] flex flex-col">
+                <h3 className="text-lg font-bold text-gray-900">Editar prompt de investigación</h3>
+                <p className="mt-1 text-sm text-gray-500">
+                    Conservá los placeholders <code className="text-xs bg-gray-100 px-1 rounded">{'{{ORGANIZATIONS}}'}</code> y{' '}
+                    <code className="text-xs bg-gray-100 px-1 rounded">{'{{CATEGORIES}}'}</code> para que se inserten los
+                    catálogos actuales al copiar.
+                </p>
+                {loading ? (
+                    <div className="mt-4 h-64 bg-gray-100 rounded-xl animate-pulse" />
+                ) : (
+                    <textarea
+                        value={prompt}
+                        onChange={(e) => {
+                            setPrompt(e.target.value);
+                            setSaved(false);
+                        }}
+                        className="mt-4 w-full flex-1 min-h-[320px] px-4 py-3 border border-gray-300 rounded-xl text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                )}
+                {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
+                {saved && !error && <p className="mt-3 text-sm text-green-600">Prompt actualizado.</p>}
+                <div className="mt-5 flex flex-wrap justify-end gap-3">
+                    <button
+                        type="button"
+                        onClick={handleReset}
+                        disabled={loading || resetting || saving}
+                        className="px-4 py-2 text-sm font-semibold text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors disabled:opacity-50"
+                    >
+                        {resetting ? 'Restaurando...' : 'Restaurar default'}
+                    </button>
+                    <button
+                        type="button"
+                        onClick={onClose}
+                        disabled={saving}
+                        className="px-4 py-2 text-sm font-semibold text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors disabled:opacity-50"
+                    >
+                        Cancelar
+                    </button>
+                    <button
+                        type="button"
+                        onClick={handleSave}
+                        disabled={loading || saving}
+                        className="px-4 py-2 text-sm font-semibold text-white bg-blue-700 hover:bg-blue-800 rounded-xl transition-colors disabled:opacity-50"
+                    >
+                        {saving ? 'Guardando...' : 'Guardar'}
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+}
+
 // ─── Result summary panel ─────────────────────────────────────────────────────
 
-function ImportResultPanel({ result, onReset }: { result: ImportResult; onReset: () => void }) {
+function ImportResultPanel({
+    result,
+    onReset,
+    onCreateMissing,
+    creatingMissing,
+}: {
+    result: ImportResult;
+    onReset: () => void;
+    onCreateMissing?: () => void;
+    creatingMissing?: boolean;
+}) {
     const hasErrors = result.errores.length > 0;
+    const missing = result.organizacionesFaltantes ?? [];
+    const createdOrgs = result.organizacionesCreadas ?? 0;
 
     return (
         <div className="space-y-4 animate-fade-in">
@@ -40,6 +246,44 @@ function ImportResultPanel({ result, onReset }: { result: ImportResult; onReset:
                     </p>
                 </div>
             </div>
+
+            {createdOrgs > 0 && (
+                <div className="bg-blue-50 border border-blue-200 rounded-2xl px-5 py-4 text-sm text-blue-800">
+                    Se crearon {createdOrgs} organización{createdOrgs !== 1 ? 'es' : ''} y se importaron los
+                    cursos con la información básica de la investigación. Completá descripción, sitio web y
+                    contacto desde{' '}
+                    <a href="/dashboard/organizations" className="font-semibold underline">
+                        Organizaciones
+                    </a>{' '}
+                    o editando cada curso cuando haga falta.
+                </div>
+            )}
+
+            {missing.length > 0 && (
+                <div className="bg-amber-50 border border-amber-200 rounded-2xl px-5 py-4">
+                    <p className="text-sm font-semibold text-amber-900 mb-2">
+                        {missing.length} organización{missing.length !== 1 ? 'es' : ''} no encontrada
+                        {missing.length !== 1 ? 's' : ''}
+                    </p>
+                    <ul className="text-sm text-amber-800 list-disc list-inside mb-3">
+                        {missing.map((org) => (
+                            <li key={org.nombre}>
+                                {org.nombre} ({org.cursos.length} curso{org.cursos.length !== 1 ? 's' : ''})
+                            </li>
+                        ))}
+                    </ul>
+                    {onCreateMissing && (
+                        <button
+                            type="button"
+                            onClick={onCreateMissing}
+                            disabled={creatingMissing}
+                            className="px-4 py-2 text-sm font-semibold text-amber-900 bg-white border border-amber-300 rounded-xl hover:bg-amber-100 transition-colors disabled:opacity-50"
+                        >
+                            {creatingMissing ? 'Creando...' : 'Crear organizaciones e importar cursos'}
+                        </button>
+                    )}
+                </div>
+            )}
 
             {/* Error detail */}
             {hasErrors && (
@@ -86,8 +330,12 @@ export default function ImportCoursesPage() {
     const [uploadError, setUploadError] = useState<string | null>(null);
     const [result, setResult] = useState<ImportResult | null>(null);
     const [copyPromptState, setCopyPromptState] = useState<CopyPromptState>('idle');
+    const [showMissingModal, setShowMissingModal] = useState(false);
+    const [creatingMissing, setCreatingMissing] = useState(false);
+    const [showPromptEditor, setShowPromptEditor] = useState(false);
 
     const inputRef = useRef<HTMLInputElement>(null);
+    const pendingFileRef = useRef<File | null>(null);
 
     const validateFile = (file: File): string | null => {
         const ext = '.' + file.name.split('.').pop()?.toLowerCase();
@@ -118,17 +366,45 @@ export default function ImportCoursesPage() {
         if (file) handleFileSelect(file);
     };
 
+    const applyResult = (res: ImportResult) => {
+        setResult(res);
+        setUploadState('done');
+        if ((res.organizacionesFaltantes ?? []).length > 0) {
+            setShowMissingModal(true);
+        } else {
+            setShowMissingModal(false);
+        }
+    };
+
     const handleUpload = async () => {
         if (!selectedFile) return;
+        pendingFileRef.current = selectedFile;
         setUploadState('uploading');
         setUploadError(null);
         try {
             const res = await coursesService.importFile(selectedFile);
-            setResult(res);
-            setUploadState('done');
+            applyResult(res);
         } catch (err) {
             setUploadError(err instanceof Error ? err.message : 'Error desconocido al procesar el archivo.');
             setUploadState('error');
+        }
+    };
+
+    const handleCreateMissing = async () => {
+        const file = pendingFileRef.current;
+        if (!file) return;
+        setCreatingMissing(true);
+        setUploadError(null);
+        try {
+            const res = await coursesService.importFile(file, {
+                createMissingOrganizations: true,
+            });
+            applyResult(res);
+        } catch (err) {
+            setUploadError(err instanceof Error ? err.message : 'Error al crear las organizaciones.');
+            setShowMissingModal(false);
+        } finally {
+            setCreatingMissing(false);
         }
     };
 
@@ -138,20 +414,27 @@ export default function ImportCoursesPage() {
         setValidationError(null);
         setUploadError(null);
         setResult(null);
+        setShowMissingModal(false);
+        pendingFileRef.current = null;
         if (inputRef.current) inputRef.current.value = '';
     };
 
     const handleCopyChatGptPrompt = async () => {
         setCopyPromptState('copying');
         try {
-            const [organizations, categories] = await Promise.all([
+            const [organizations, categories, promptSetting] = await Promise.all([
                 organizationsService.getAll(),
                 categoriesService.getAll(),
+                settingsService.getChatgptImportPrompt().catch(() => ({
+                    prompt: null,
+                    isDefault: true,
+                })),
             ]);
 
             const prompt = buildChatGptCourseImportPrompt(
                 organizations.map((org) => org.name),
                 categories.map((cat) => cat.name),
+                promptSetting.prompt ?? CHATGPT_COURSE_IMPORT_PROMPT_TEMPLATE,
             );
 
             await navigator.clipboard.writeText(prompt);
@@ -180,7 +463,16 @@ export default function ImportCoursesPage() {
             </div>
 
             {uploadState === 'done' && result ? (
-                <ImportResultPanel result={result} onReset={handleReset} />
+                <ImportResultPanel
+                    result={result}
+                    onReset={handleReset}
+                    onCreateMissing={
+                        (result.organizacionesFaltantes ?? []).length > 0
+                            ? () => setShowMissingModal(true)
+                            : undefined
+                    }
+                    creatingMissing={creatingMissing}
+                />
             ) : (
                 <div className="space-y-6">
                     {/* ChatGPT prompt helper */}
@@ -193,36 +485,45 @@ export default function ImportCoursesPage() {
                                     preguntas que te haga. Incluye las organizaciones y categorías actuales de la plataforma.
                                 </p>
                             </div>
-                            <button
-                                type="button"
-                                onClick={handleCopyChatGptPrompt}
-                                disabled={copyPromptState === 'copying'}
-                                className="inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold text-violet-900 bg-white border border-violet-300 rounded-xl hover:bg-violet-100 transition-colors whitespace-nowrap disabled:opacity-60 disabled:cursor-not-allowed flex-shrink-0"
-                            >
-                                {copyPromptState === 'copying' ? (
-                                    <>
-                                        <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
-                                        </svg>
-                                        Copiando...
-                                    </>
-                                ) : copyPromptState === 'copied' ? (
-                                    <>
-                                        <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                        </svg>
-                                        ¡Copiado!
-                                    </>
-                                ) : (
-                                    <>
-                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                                        </svg>
-                                        Copiar prompt CHAT GPT
-                                    </>
-                                )}
-                            </button>
+                            <div className="flex flex-col gap-2 flex-shrink-0">
+                                <button
+                                    type="button"
+                                    onClick={handleCopyChatGptPrompt}
+                                    disabled={copyPromptState === 'copying'}
+                                    className="inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold text-violet-900 bg-white border border-violet-300 rounded-xl hover:bg-violet-100 transition-colors whitespace-nowrap disabled:opacity-60 disabled:cursor-not-allowed"
+                                >
+                                    {copyPromptState === 'copying' ? (
+                                        <>
+                                            <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                                            </svg>
+                                            Copiando...
+                                        </>
+                                    ) : copyPromptState === 'copied' ? (
+                                        <>
+                                            <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                            </svg>
+                                            ¡Copiado!
+                                        </>
+                                    ) : (
+                                        <>
+                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                            </svg>
+                                            Copiar prompt CHAT GPT
+                                        </>
+                                    )}
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setShowPromptEditor(true)}
+                                    className="inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold text-violet-800 bg-transparent border border-violet-200 rounded-xl hover:bg-violet-100 transition-colors whitespace-nowrap"
+                                >
+                                    Editar prompt
+                                </button>
+                            </div>
                         </div>
                         {copyPromptState === 'error' && (
                             <p className="text-xs text-red-600 mt-3">
@@ -375,6 +676,17 @@ export default function ImportCoursesPage() {
                     </div>
                 </div>
             )}
+
+            {showMissingModal && (result?.organizacionesFaltantes ?? []).length > 0 && (
+                <MissingOrgsModal
+                    organizations={result!.organizacionesFaltantes}
+                    confirming={creatingMissing}
+                    onConfirm={handleCreateMissing}
+                    onDismiss={() => setShowMissingModal(false)}
+                />
+            )}
+
+            {showPromptEditor && <EditPromptModal onClose={() => setShowPromptEditor(false)} />}
         </div>
     );
 }

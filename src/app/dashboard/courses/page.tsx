@@ -72,8 +72,10 @@ interface ActionsMenuProps {
     onToggle: () => void;
     onClose: () => void;
     onToggleActive: () => void;
+    onToggleFeatured: () => void;
     onDelete: () => void;
     togglingActive: boolean;
+    togglingFeatured: boolean;
 }
 
 function ActionsMenu({
@@ -82,8 +84,10 @@ function ActionsMenu({
     onToggle,
     onClose,
     onToggleActive,
+    onToggleFeatured,
     onDelete,
     togglingActive,
+    togglingFeatured,
 }: ActionsMenuProps) {
     const menuRef = useRef<HTMLDivElement>(null);
 
@@ -137,6 +141,29 @@ function ActionsMenu({
                         </svg>
                         Editar
                     </Link>
+
+                    {/* Destacado */}
+                    <button
+                        onClick={() => { onToggleFeatured(); onClose(); }}
+                        disabled={togglingFeatured}
+                        className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50"
+                    >
+                        {course.isFeatured ? (
+                            <>
+                                <svg className="w-4 h-4 text-amber-500" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
+                                </svg>
+                                Quitar de destacados
+                            </>
+                        ) : (
+                            <>
+                                <svg className="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.364 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.364-1.118L2.98 10.101c-.783-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                                </svg>
+                                Marcar como destacado
+                            </>
+                        )}
+                    </button>
 
                     {/* Activar / Desactivar */}
                     <button
@@ -204,33 +231,51 @@ function SkeletonRow() {
 
 // ─── Main page ────────────────────────────────────────────────────────────────
 
+const PAGE_SIZE = 10;
+
 export default function DashboardCoursesPage() {
     const [courses, setCourses] = useState<Course[]>([]);
     const [categories, setCategories] = useState<Category[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    // Filters
+    // Filters + pagination
     const [searchName, setSearchName] = useState('');
+    const [debouncedSearch, setDebouncedSearch] = useState('');
     const [selectedCategoryId, setSelectedCategoryId] = useState<string>('');
+    const [page, setPage] = useState(1);
+    const [total, setTotal] = useState(0);
+    const [totalPages, setTotalPages] = useState(1);
 
     // UI state
     const [openMenuId, setOpenMenuId] = useState<number | null>(null);
     const [deleteTarget, setDeleteTarget] = useState<Course | null>(null);
     const [deletingId, setDeletingId] = useState<number | null>(null);
     const [togglingId, setTogglingId] = useState<number | null>(null);
+    const [togglingFeaturedId, setTogglingFeaturedId] = useState<number | null>(null);
 
-    const fetchCourses = useCallback(async (categoryId?: number) => {
+    useEffect(() => {
+        const timeout = window.setTimeout(() => setDebouncedSearch(searchName), 300);
+        return () => window.clearTimeout(timeout);
+    }, [searchName]);
+
+    const filtersKey = `${debouncedSearch}|${selectedCategoryId}`;
+    const filtersKeyRef = useRef(filtersKey);
+
+    const fetchCourses = useCallback(async () => {
         setLoading(true);
         setError(null);
         try {
             const res = await coursesService.getAll({
-                categoryId,
-                limit: 100,
-                page: 1,
+                categoryId: selectedCategoryId ? parseInt(selectedCategoryId) : undefined,
+                search: debouncedSearch.trim() || undefined,
+                limit: PAGE_SIZE,
+                page,
                 includeInactive: true,
             });
             setCourses(res.data);
+            setTotal(res.total);
+            setTotalPages(Math.max(1, res.totalPages));
         } catch (err) {
             const message =
                 err instanceof ApiError
@@ -240,36 +285,28 @@ export default function DashboardCoursesPage() {
         } finally {
             setLoading(false);
         }
+    }, [page, debouncedSearch, selectedCategoryId]);
+
+    useEffect(() => {
+        categoriesService.getAll().then(setCategories).catch(() => {
+            setError('No se pudieron cargar las categorías.');
+        });
     }, []);
 
     useEffect(() => {
-        Promise.all([
-            coursesService.getAll({ limit: 100, page: 1, includeInactive: true }),
-            categoriesService.getAll(),
-        ])
-            .then(([res, cats]) => {
-                setCourses(res.data);
-                setCategories(cats);
-            })
-            .catch((err) => {
-                const message =
-                    err instanceof ApiError
-                        ? err.message
-                        : 'No se pudieron cargar los datos.';
-                setError(message);
-            })
-            .finally(() => setLoading(false));
-    }, []);
+        if (filtersKeyRef.current !== filtersKey) {
+            filtersKeyRef.current = filtersKey;
+            if (page !== 1) {
+                setPage(1);
+                return;
+            }
+        }
+        fetchCourses();
+    }, [fetchCourses, filtersKey, page]);
 
     const handleCategoryChange = (value: string) => {
         setSelectedCategoryId(value);
-        fetchCourses(value ? parseInt(value) : undefined);
     };
-
-    // Client-side name filter
-    const filteredCourses = courses.filter((c) =>
-        c.name.toLowerCase().includes(searchName.toLowerCase()),
-    );
 
     const handleToggleActive = async (course: Course) => {
         setTogglingId(course.id);
@@ -287,13 +324,35 @@ export default function DashboardCoursesPage() {
         }
     };
 
+    const handleToggleFeatured = async (course: Course) => {
+        setTogglingFeaturedId(course.id);
+        try {
+            const updated = await coursesService.update(course.id, {
+                isFeatured: !course.isFeatured,
+            });
+            setCourses((prev) =>
+                prev.map((c) =>
+                    c.id === course.id ? { ...c, isFeatured: updated.isFeatured } : c,
+                ),
+            );
+        } catch {
+            setError('No se pudo actualizar el destacado del curso.');
+        } finally {
+            setTogglingFeaturedId(null);
+        }
+    };
+
     const handleDeleteConfirm = async () => {
         if (!deleteTarget) return;
         setDeletingId(deleteTarget.id);
         try {
             await coursesService.remove(deleteTarget.id);
             setCourses((prev) => prev.filter((c) => c.id !== deleteTarget.id));
+            setTotal((prev) => Math.max(0, prev - 1));
             setDeleteTarget(null);
+            if (courses.length === 1 && page > 1) {
+                setPage((prev) => prev - 1);
+            }
         } catch {
             setError('No se pudo eliminar el curso. Intentá nuevamente.');
             setDeleteTarget(null);
@@ -301,6 +360,9 @@ export default function DashboardCoursesPage() {
             setDeletingId(null);
         }
     };
+
+    const rangeStart = total === 0 ? 0 : (page - 1) * PAGE_SIZE + 1;
+    const rangeEnd = Math.min(page * PAGE_SIZE, total);
 
     const formatDate = (dateStr: string | null) =>
         dateStr ? new Date(dateStr).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '—';
@@ -312,7 +374,7 @@ export default function DashboardCoursesPage() {
                 <div>
                     <h1 className="text-3xl font-extrabold text-gray-900">Cursos</h1>
                     <p className="text-gray-500 mt-1">
-                        {!loading && `${filteredCourses.length} curso${filteredCourses.length !== 1 ? 's' : ''} encontrado${filteredCourses.length !== 1 ? 's' : ''}`}
+                        {!loading && `${total} curso${total !== 1 ? 's' : ''} encontrado${total !== 1 ? 's' : ''}`}
                     </p>
                 </div>
                 <Button href="/dashboard/courses/new" variant="primary" size="md">
@@ -427,7 +489,7 @@ export default function DashboardCoursesPage() {
                         <tbody className="divide-y divide-gray-100">
                             {loading ? (
                                 [...Array(6)].map((_, i) => <SkeletonRow key={i} />)
-                            ) : filteredCourses.length === 0 ? (
+                            ) : courses.length === 0 ? (
                                 <tr>
                                     <td colSpan={6} className="px-4 py-16 text-center">
                                         <div className="flex flex-col items-center gap-3 text-gray-400">
@@ -448,7 +510,7 @@ export default function DashboardCoursesPage() {
                                     </td>
                                 </tr>
                             ) : (
-                                filteredCourses.map((course) => {
+                                courses.map((course) => {
                                     const categories = course.courseCategories
                                         ?.map((cc) => cc.category)
                                         .filter(Boolean) ?? [];
@@ -460,9 +522,19 @@ export default function DashboardCoursesPage() {
                                         >
                                             {/* Nombre + organización */}
                                             <td className="px-4 py-4 max-w-xs">
-                                                <p className="font-semibold text-gray-900 line-clamp-2 group-hover:text-blue-800 transition-colors">
-                                                    {course.name}
-                                                </p>
+                                                <div className="flex items-start gap-2">
+                                                    <p className="font-semibold text-gray-900 line-clamp-2 group-hover:text-blue-800 transition-colors">
+                                                        {course.name}
+                                                    </p>
+                                                    {course.isFeatured && (
+                                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-100 text-amber-700 whitespace-nowrap mt-0.5">
+                                                            <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
+                                                                <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
+                                                            </svg>
+                                                            Destacado
+                                                        </span>
+                                                    )}
+                                                </div>
                                                 {course.organization && (
                                                     <p className="text-xs text-gray-500 mt-0.5 truncate">
                                                         {course.organization.name}
@@ -530,8 +602,10 @@ export default function DashboardCoursesPage() {
                                                     }
                                                     onClose={() => setOpenMenuId(null)}
                                                     onToggleActive={() => handleToggleActive(course)}
+                                                    onToggleFeatured={() => handleToggleFeatured(course)}
                                                     onDelete={() => setDeleteTarget(course)}
                                                     togglingActive={togglingId === course.id}
+                                                    togglingFeatured={togglingFeaturedId === course.id}
                                                 />
                                             </td>
                                         </tr>
@@ -542,11 +616,57 @@ export default function DashboardCoursesPage() {
                     </table>
                 </div>
 
-                {/* Table footer with count */}
-                {!loading && filteredCourses.length > 0 && (
-                    <div className="px-4 py-3 border-t border-gray-100 bg-gray-50/50 text-xs text-gray-500">
-                        Mostrando {filteredCourses.length} de {courses.length} curso{courses.length !== 1 ? 's' : ''}
-                        {(searchName || selectedCategoryId) && ' (filtrado)'}
+                {/* Table footer with count + pagination */}
+                {!loading && total > 0 && (
+                    <div className="px-4 py-3 border-t border-gray-100 bg-gray-50/50 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                        <p className="text-xs text-gray-500">
+                            Mostrando {rangeStart}–{rangeEnd} de {total} curso{total !== 1 ? 's' : ''}
+                            {(searchName || selectedCategoryId) && ' (filtrado)'}
+                        </p>
+                        {totalPages > 1 && (
+                            <div className="flex items-center gap-2">
+                                <button
+                                    type="button"
+                                    onClick={() => setPage((prev) => Math.max(1, prev - 1))}
+                                    disabled={page <= 1}
+                                    className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-white border border-gray-200 text-gray-700 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed"
+                                >
+                                    Anterior
+                                </button>
+                                {Array.from({ length: totalPages }, (_, i) => i + 1)
+                                    .filter((p) => totalPages <= 7 || Math.abs(p - page) <= 2 || p === 1 || p === totalPages)
+                                    .map((p, index, list) => {
+                                        const prev = list[index - 1];
+                                        const showEllipsis = prev !== undefined && p - prev > 1;
+                                        return (
+                                            <span key={p} className="flex items-center gap-2">
+                                                {showEllipsis && (
+                                                    <span className="text-xs text-gray-400">…</span>
+                                                )}
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setPage(p)}
+                                                    className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors ${
+                                                        p === page
+                                                            ? 'bg-blue-700 text-white'
+                                                            : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-100'
+                                                    }`}
+                                                >
+                                                    {p}
+                                                </button>
+                                            </span>
+                                        );
+                                    })}
+                                <button
+                                    type="button"
+                                    onClick={() => setPage((prev) => Math.min(totalPages, prev + 1))}
+                                    disabled={page >= totalPages}
+                                    className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-white border border-gray-200 text-gray-700 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed"
+                                >
+                                    Siguiente
+                                </button>
+                            </div>
+                        )}
                     </div>
                 )}
             </div>
