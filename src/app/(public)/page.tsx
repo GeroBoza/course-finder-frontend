@@ -7,17 +7,17 @@ import { coursesService } from '@/services/courses.service';
 import Link from 'next/link';
 
 export default async function Home() {
-    const [coursesResponse, categories] = await Promise.all([
-        coursesService.getAll({ limit: 9 }),
+    const [featuredResponse, categories] = await Promise.all([
+        coursesService.getAll({ isFeatured: true, limit: 6 }),
         categoriesService.getAll(),
     ]);
 
-    const featuredCourses = coursesResponse.data.slice(0, 6);
+    const featuredCourses = featuredResponse.data;
 
     return (
         <div className="animate-fade-in">
             {/* Hero Section */}
-            <section className="relative bg-gradient-to-br from-blue-800 via-blue-900 to-blue-950 text-white py-24 md:py-32 overflow-hidden">
+            <section className="relative bg-gradient-to-br from-blue-800 via-blue-900 to-blue-950 text-white py-16 md:py-20 overflow-hidden">
                 <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxwYXRoIGQ9Ik0zNiAzNGMwIDMuMzE0LTIuNjg2IDYtNiA2cy02LTIuNjg2LTYtNiAyLjY4Ni02IDYtNiA2IDIuNjg2IDYgNnoiIGZpbGw9InJnYmEoMjU1LDI1NSwyNTUsMC4xKSIvPjwvZz48L3N2Zz4=')] opacity-20"></div>
                 <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="text-center">
@@ -28,14 +28,14 @@ export default async function Home() {
                             </span>
                         </h1>
                         <p className="text-xl md:text-2xl mb-10 text-blue-200 max-w-3xl mx-auto leading-relaxed">
-                            Buscador de cursos de instituciones de todo el país
+                            Facilitamos el acceso permanente al conocimiento
                         </p>
-                        <div className="max-w-2xl mx-auto mb-14">
+                        <div className="max-w-2xl mx-auto mb-10">
                             <SearchBar />
                         </div>
                         <p className="text-xl md:text-2xl text-blue-200 max-w-3xl mx-auto leading-relaxed">
-                            "CapaContinua es acercarnos al conocimiento y
-                            fomentar el aprendizaje"
+                            CapaContinua es acercarnos al saber y
+                            fomentar el aprendizaje continuo para el desarrollo inicial, profesional, docente y laboral
                         </p>
                     </div>
                 </div>
@@ -55,7 +55,13 @@ export default async function Home() {
                             Calidad certificada
                         </p>
                     </div>
-                    <CourseCarousel courses={featuredCourses} />
+                    {featuredCourses.length > 0 ? (
+                        <CourseCarousel courses={featuredCourses} />
+                    ) : (
+                        <p className="text-center text-gray-500 text-lg">
+                            Todavía no hay cursos destacados.
+                        </p>
+                    )}
                     <div className="text-center mt-16">
                         <Link href="/courses">
                             <Button

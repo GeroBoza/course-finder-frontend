@@ -68,7 +68,7 @@ export default function CoursesPage() {
                     page: searchParams.get('page')
                         ? parseInt(searchParams.get('page')!)
                         : 1,
-                    limit: 12,
+                    limit: 6,
                 };
 
                 const courses = await coursesService.getAll(filters);

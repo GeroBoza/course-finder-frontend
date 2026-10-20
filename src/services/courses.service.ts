@@ -23,6 +23,12 @@ export const coursesService = {
         if (filters?.includeInactive) {
             params.append('includeInactive', 'true');
         }
+        if (filters?.search) {
+            params.append('search', filters.search);
+        }
+        if (filters?.isFeatured) {
+            params.append('isFeatured', 'true');
+        }
 
         const queryString = params.toString();
         const endpoint = queryString ? `/courses?${queryString}` : '/courses';
@@ -63,9 +69,15 @@ export const coursesService = {
         await fetchApi<void>(`/courses/${id}`, { method: 'DELETE' });
     },
 
-    async importFile(file: File): Promise<ImportResult> {
+    async importFile(
+        file: File,
+        options?: { createMissingOrganizations?: boolean },
+    ): Promise<ImportResult> {
         const formData = new FormData();
         formData.append('file', file);
+        if (options?.createMissingOrganizations) {
+            formData.append('createMissingOrganizations', 'true');
+        }
 
         const headers: Record<string, string> = {};
         const token = getToken();
